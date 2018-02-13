@@ -194,7 +194,7 @@ class SC_MarketingFunctionPlugin {
         $labels = array(
             'name'                  => _x( 'Marketing Messages', 'Post Type General Name' ),
             'singular_name'         => _x( 'Marketing Message', 'Post Type Singular Name' ),
-            'menu_name'             => __( 'Marketing' ),
+            'menu_name'             => __( 'Plugin Marketing' ),
             'name_admin_bar'        => __( 'Marketing Message' ),
             'archives'              => __( 'Item Archives' ),
             'parent_item_colon'     => __( 'Parent Item:' ),
@@ -257,12 +257,34 @@ if ( !class_exists( 'SC_MarketingFunctionEmbedded' ) ) :
 class SC_MarketingFunctionEmbedded {
 
     /**
+     * The transient key for the messages cache.
+     *
+     * @since 1.0.0
+     */
+    const TRANSIENT = 'sc_marketing_messages_cache';
+
+    /**
+     * The timeout period for the messages cache.
+     *
+     * @since 1.0.0
+     */
+    const CACHE_TTL = 86400;
+
+    /**
      * The url of the server to pull messages from.
      *
      * @since 1.0.0
      * @var string
      */
     public $url = '';
+
+    /**
+     * Cached messages from the API.
+     *
+     * @since 1.0.0
+     * @var array
+     */
+    public $cache = array();
 
     /**
      * Constructor.
@@ -282,6 +304,7 @@ class SC_MarketingFunctionEmbedded {
             }
         }
 
+        $this->cache = get_transient( self::TRANSIENT );
         $this->init();
     }
 
@@ -292,9 +315,101 @@ class SC_MarketingFunctionEmbedded {
      * @return void
      */
     protected function init() {
-
+        add_action( 'admin_init', array( $this, 'update_cache' ) );
+        add_action( 'sc_marketing_message_field', array( $this, 'print_message_field' ), 10, 3 );
     }
 
+    /**
+     * Update the messages cache if the transient has timed out.
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    public function update_cache() {
+        if ( !empty( $this->cache ) ) {
+            return;
+        }
+
+        $messages = $this->fetch_messages();
+
+        if ( !empty( $messages ) ) {
+            $this->cache = $messages;
+            set_transient( self::TRANSIENT, $messages, self::CACHE_TTL );
+        }
+    }
+
+    /**
+     * Make a request to the API and fetch all messages.
+     *
+     * @return bool|string
+     */
+    protected function fetch_messages() {
+        $url = trailingslashit( $this->url ) . '/wp-json/wp/v2/marketing-messages?per_page=100';
+        $res = wp_remote_get( $url );
+
+        if ( wp_remote_retrieve_response_code( $res ) !== 200 ) {
+            return false;
+        }
+
+        return json_decode( wp_remote_retrieve_body( $res ), true );
+    }
+
+    /**
+     * Output the field for a message
+     *
+     * @action sc_marketing_message_field
+     *
+     * @param string          $slug   The slug of the message
+     * @param string          $field  The name of the field
+     * @param string|callable $escape The escape function to echo with
+     * @param bool            $echo   Whether to echo the return value
+     *
+     * @since 1.0.0
+     * @return false|string
+     */
+    function print_message_field( $slug, $field, $escape = 'stripslashes', $echo = true ) {
+        if ( !is_array( $this->cache ) ) {
+            return false;
+        }
+
+        $message = false;
+
+        foreach ( $this->cache as $cached ) {
+            if ( !isset( $cached['slug'] ) || $cached['slug'] !== $slug ) {
+                $message = $cached;
+                break; // Break early if we found it
+            }
+        }
+
+        if ( !$message || !isset( $message[ $field ] ) ) {
+            return false;
+        }
+
+        if ( $echo ) {
+            echo call_user_func( $escape, $message[ $field ] );
+        }
+
+        return $message[ $field ];
+    }
+
+}
+
+/**
+ * Helper to output message fields.
+ *
+ * @param string          $slug
+ * @param string          $field
+ * @param string|callable $escape
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function sc_marketing_message_field( $slug, $field, $escape = 'stripslashes' ) {
+    /**
+     *
+     * @since 1.0.0
+     */
+    do_action( 'sc_marketing_message_field', $slug, $field, $escape );
 }
 
 endif;
