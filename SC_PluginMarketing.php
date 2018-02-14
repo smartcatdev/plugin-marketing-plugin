@@ -316,7 +316,7 @@ class SC_MarketingFunctionEmbedded {
      */
     protected function init() {
         add_action( 'admin_init', array( $this, 'update_cache' ) );
-        add_action( 'sc_marketing_message', array( $this, 'print_message' ), 10, 2, 3 );
+        add_action( 'sc_marketing_message', array( $this, 'print_message' ), 10, 3 );
     }
 
     /**
@@ -452,34 +452,34 @@ function sc_escape_marketing_message( $content ) {
              ,'title' => array()
         ),
         'h1' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
         'h2' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
         'h3' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
         'h4' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
         'h5' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
         'h6' => array(
-             'id'    => array()
-            ,'class' => array()
-            ,'style' => array()
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
         ),
     );
 
