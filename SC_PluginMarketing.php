@@ -198,7 +198,7 @@ class SC_MarketingFunctionPlugin {
             'name_admin_bar'        => __( 'Marketing Message' ),
             'archives'              => __( 'Item Archives' ),
             'parent_item_colon'     => __( 'Parent Item:' ),
-            'all_items'             => __( 'Message List' ),
+            'all_items'             => __( 'All Messages' ),
             'add_new_item'          => __( 'Create Message' ),
             'add_new'               => __( 'Create Message' ),
             'new_item'              => __( 'Create Message' ),
@@ -316,7 +316,7 @@ class SC_MarketingFunctionEmbedded {
      */
     protected function init() {
         add_action( 'admin_init', array( $this, 'update_cache' ) );
-        add_action( 'sc_marketing_message_field', array( $this, 'print_message_field' ), 10, 3 );
+        add_action( 'sc_marketing_message', array( $this, 'print_message' ), 10, 2, 3 );
     }
 
     /**
@@ -357,17 +357,16 @@ class SC_MarketingFunctionEmbedded {
     /**
      * Output the field for a message
      *
-     * @action sc_marketing_message_field
+     * @action sc_marketing_message
      *
-     * @param string          $slug   The slug of the message
-     * @param string          $field  The name of the field
-     * @param string|callable $escape The escape function to echo with
-     * @param bool            $echo   Whether to echo the return value
+     * @param mixed           $_       (Unused)
+     * @param string          $slug    The slug of the message
+     * @param bool            $echo    Whether to echo the return value
      *
      * @since 1.0.0
      * @return false|string
      */
-    function print_message_field( $slug, $field, $escape = 'stripslashes', $echo = true ) {
+    function print_message( $_ = '', $slug, $echo = true ) {
         if ( !is_array( $this->cache ) ) {
             return false;
         }
@@ -375,21 +374,21 @@ class SC_MarketingFunctionEmbedded {
         $message = false;
 
         foreach ( $this->cache as $cached ) {
-            if ( !isset( $cached['slug'] ) || $cached['slug'] !== $slug ) {
+            if ( isset( $cached['slug'] ) && $cached['slug'] === $slug ) {
                 $message = $cached;
                 break; // Break early if we found it
             }
         }
 
-        if ( !$message || !isset( $message[ $field ] ) ) {
+        if ( !$message || empty( $message['content'] ) ) {
             return false;
         }
 
         if ( $echo ) {
-            echo call_user_func( $escape, $message[ $field ] );
+            echo sc_escape_marketing_message( $message['content']['rendered'] );
         }
 
-        return $message[ $field ];
+        return $message['content']['rendered'];
     }
 
 }
@@ -398,18 +397,93 @@ class SC_MarketingFunctionEmbedded {
  * Helper to output message fields.
  *
  * @param string          $slug
- * @param string          $field
- * @param string|callable $escape
+ * @param bool            $echo
  *
  * @since 1.0.0
- * @return void
+ * @return string
  */
-function sc_marketing_message_field( $slug, $field, $escape = 'stripslashes' ) {
+function sc_marketing_message( $slug, $echo = true ) {
     /**
      *
      * @since 1.0.0
      */
-    do_action( 'sc_marketing_message_field', $slug, $field, $escape );
+    return apply_filters( 'sc_marketing_message', '', $slug, $echo );
+}
+
+
+/**
+ * Safely limit tags and attributes to a specific few.
+ *
+ * @param string content
+ *
+ * @since 1.0.0
+ * @return string
+ */
+function sc_escape_marketing_message( $content ) {
+    $allowed_tags = array(
+        'a' => array(
+             'id'     => array()
+            ,'href'   => array()
+            ,'class'  => array()
+            ,'style'  => array()
+            ,'target' => array()
+            ,'title'  => array()
+        ),
+        'p' => array(
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
+        ),
+        'span' => array(
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
+             ,'title' => array()
+        ),
+        'div' => array(
+              'id'    => array()
+             ,'class' => array()
+             ,'style' => array()
+        ),
+        'button' => array(
+             'id'     => array()
+             ,'class' => array()
+             ,'style' => array()
+             ,'title' => array()
+        ),
+        'h1' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+        'h2' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+        'h3' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+        'h4' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+        'h5' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+        'h6' => array(
+             'id'    => array()
+            ,'class' => array()
+            ,'style' => array()
+        ),
+    );
+
+    return wp_kses( $content, $allowed_tags );
 }
 
 endif;
